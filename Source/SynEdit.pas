@@ -505,7 +505,10 @@ type
 {$IFDEF SYN_CodeFolding}
     fOnScanForFoldRanges : TScanForFoldRangesEvent;
 {$ENDIF}
-
+{$IFDEF SYN_CodeFolding2}
+    FShowSkippedLineCountHint: Boolean;
+    FDrawFoldingMarkBeforeLine: Boolean;
+{$ENDIF}
     FShowSpecChar: Boolean;
     FPaintTransientLock: Integer;
     FIsScrolling: Boolean;
@@ -660,6 +663,12 @@ type
     procedure OnCodeFoldingChange(Sender: TObject);
     function GetCollapseMarkRect(Row: Integer; Line: Integer = -1): TRect;
     function GetFoldShapeRect(Row: Integer): TRect;
+{$ENDIF}
+{$IFDEF SYN_CodeFolding2}
+    procedure SetDrawFoldingMarkBeforeLine(const Value: Boolean);
+    procedure SetShowSkippedLineCountHint(const Value: Boolean);
+    procedure PaintFoldingMarkBeforeLine(AClip: TRect; const aFirstRow, aLastRow,
+      FirstCol, LastCol: Integer);
 {$ENDIF}
   protected
     FIgnoreNextChar: Boolean;
@@ -928,6 +937,9 @@ type
     procedure CollapseFoldType(FoldType : Integer);
     procedure UnCollapseFoldType(FoldType : Integer);
 {$ENDIF}
+    {$IFDEF SYN_CodeFolding2}
+    property TextOffset: Integer read FTextOffset;
+    {$ENDIF}
   public
     property AdditionalIdentChars: TSysCharSet read FAdditionalIdentChars write SetAdditionalIdentChars;
     property AdditionalWordBreakChars: TSysCharSet read FAdditionalWordBreakChars write SetAdditionalWordBreakChars;
@@ -984,6 +996,10 @@ type
     property CodeFolding: TSynCodeFolding read fCodeFolding write fCodeFolding;
     property UseCodeFolding: Boolean read fUseCodeFolding write SetUseCodeFolding;
     property AllFoldRanges: TSynFoldRanges read fAllFoldRanges;
+{$ENDIF}
+{$IFDEF SYN_CodeFolding2}
+    property ShowSkippedLineCountHint: Boolean read FShowSkippedLineCountHint write SetShowSkippedLineCountHint;
+    property DrawFoldingMarkBeforeLine: Boolean read FDrawFoldingMarkBeforeLine write SetDrawFoldingMarkBeforeLine;
 {$ENDIF}
     property BookMarkOptions: TSynBookMarkOpt
       read FBookMarkOpt write FBookMarkOpt;
@@ -2441,6 +2457,11 @@ begin
     if PtInRect(Rect, Point(X,Y)) then
       Uncollapse(Index);
   end;
+  {$IFDEF SYN_CodeFolding2}
+  if UseCodeFolding and DrawFoldingMarkBeforeLine and
+    AllFoldRanges.FoldStartAtLine(ptLineCol.Line) then
+      DoOnGutterClick(Button, X, Y);
+  {$ENDIF}
 {$ENDIF}
 end;
 
@@ -2535,6 +2556,11 @@ begin
       rcDraw.Left := Max(rcDraw.Left, FGutterWidth);
       PaintTextLines(rcDraw, nL1, nL2, nC1, nC2);
     end;
+
+    {$IFDEF SYN_CodeFolding2}
+    if DrawFoldingMarkBeforeLine then
+      PaintFoldingMarkBeforeLine(rcDraw, nL1, nL2, nC1, nC2);
+    {$ENDIF}
 
     // consider paint lock (inserted by CWBudde, 30th of July 2015)
     if PaintLock = 0 then
@@ -2774,6 +2800,12 @@ begin
 {$ENDIF}
 
 {$IFDEF SYN_CodeFolding}
+
+  {$IFDEF SYN_CodeFolding2}
+  if not DrawFoldingMarkBeforeLine then
+  begin
+  {$ENDIF}
+
   // Draw the folding lines and squares
   if UseCodeFolding then begin
     for cRow := aFirstRow to aLastRow do begin
@@ -2827,6 +2859,11 @@ begin
       end;
     end;
   end;
+
+  {$IFDEF SYN_CodeFolding2}
+  end;
+  {$ENDIF}
+
 {$ENDIF}
 
   // the gutter separator if visible
@@ -3482,6 +3519,40 @@ var
   end;
 
 {$IFDEF SYN_CodeFolding}
+
+  {$IFDEF SYN_CodeFolding2}
+  function DeclineRus(const Count: Integer; const s1, s234, s567: string): string;
+  {
+    1 запись
+    14 записей
+    3 записи
+    1 документ
+    13 документов
+    2 документа
+  }
+  var
+    I, A: Integer;
+  begin
+    A := Count mod 100;
+    if (A > 10) and (A < 20) then
+      I := 0
+    else
+      I := Count mod 10;
+    case I of
+      1:
+        Result := s1;
+      2, 3, 4:
+        Result := s234;
+      else
+        Result := s567;
+    end;
+    if Result <> '' then
+      if (Result[1] <> '-') and (Result[1] <> ' ') then
+        Result := ' ' + Result;
+    Result := IntToStr(Count) + Result;
+  end;
+  {$ENDIF}
+
   procedure PaintFoldAttributes;
   var
     i, TabSteps, LineIndent, LastNonBlank, X, Y, cRow, vLine: Integer;
@@ -3489,6 +3560,9 @@ var
     DottedPenDesc: LOGBRUSH;
     CollapsedTo : integer;
     HintRect : TRect;
+    {$IFDEF SYN_CodeFolding2}
+    HiddenStr: string;
+    {$ENDIF}
   begin
     // Paint indent guides. Use folds to determine indent value of these
     // Use a separate loop so we can use a custom pen
@@ -3572,8 +3646,25 @@ var
                 SetBkMode(Canvas.Handle, TRANSPARENT);
                 fTextDrawer.SetForeColor(fCodeFolding.CollapsedLineColor);
                 with HintRect do
+                begin
                   ftextDrawer.ExtTextOut(Left + 2 * CharWidth div 7,
                     Top - LineHeight div 5, [], HintRect, '...', 3);
+
+                  {$IFDEF SYN_CodeFolding2}
+                  if ShowSkippedLineCountHint then
+                  begin
+                    if ToLine - FromLine = 1 then
+                      HiddenStr := 'скрыта 1 строка'
+                    else
+                      HiddenStr :=
+                        'скрыто ' +
+                        DeclineRus(ToLine - FromLine, ' строка', ' строки', ' строк');
+                    ftextDrawer.ExtTextOut(Right + 8, Top + (Height - LineHeight) div 2 + 1,
+                      [], HintRect, PChar(HiddenStr), Length(HiddenStr));
+                  end;
+                  {$ENDIF}
+                end;
+
                 SetBkMode(Canvas.Handle, OPAQUE);
                 Canvas.Pen.Width := IfThen(LineHeight > 30, 2, 1);
                 Canvas.Brush.Style := bsClear;
@@ -4907,6 +4998,10 @@ begin
     Bottom := Top + fTextHeight - 2;
   end;
 
+  {$IFDEF SYN_CodeFolding2}
+  OffsetRect(Result, 0, -1);
+  {$ENDIF}
+
   Result.Left := fTextOffset +
     (TSynEditStringList(fLines).ExpandedStringLengths[Line-1] + 1) * fCharWidth;
 
@@ -4921,6 +5016,27 @@ begin
 end;
 
 function TCustomSynEdit.GetFoldShapeRect(Row: Integer): TRect;
+
+
+  {$IFDEF SYN_CodeFolding2}
+  function GetLineStartOffset(LineIndex: Integer): Integer;
+  var
+    SpaceCount: Integer;
+  begin
+    SpaceCount := LeftSpacesEx(FLines[LineIndex - 1], True);
+    if SpaceCount = 0 then
+      Result := 0
+    else
+      Result := SpaceCount * CharWidth + FTextOffset -
+        CodeFolding.GutterShapeSize * 2;
+  end;
+  {$ENDIF}
+
+{$IFDEF SYN_CodeFolding2}
+var
+  vLine, NewOffset: Integer;
+  TempRect: TRect;
+{$ENDIF}
 begin
   // Form a square rect for the square the user can click on
   // The fold shape is drawn in a square 4 pixels to the right of RightOffset
@@ -4931,8 +5047,163 @@ begin
   // make a square rect
   Result.Top := Result.Top + ((LineHeight - (Result.Right - Result.Left)) div 2);
   Result.Bottom := Result.Top + (Result.Right - Result.Left);
+
+  // Располагаем крестик открытия/закрытия перед линией
+  {$IFDEF SYN_CodeFolding2}
+  if DrawFoldingMarkBeforeLine then
+  begin
+    vLine := RowToLine(Row);
+    NewOffset := GetLineStartOffset(vLine);
+    if NewOffset > FGutterWidth then
+    begin
+      TempRect := Result;
+      OffsetRect(TempRect, -Result.Left, 1);
+      OffsetRect(TempRect, NewOffset, 0);
+      if Assigned(Highlighter) and (Highlighter is TSynCustomCodeFoldingHighlighter) then
+        TSynCustomCodeFoldingHighlighter(Highlighter).CorrectFoldShapeRect(vLine, TempRect);
+      if TempRect.Left > FGutterWidth then
+        Result := TempRect;
+    end;
+  end;
+  {$ENDIF}
+
 end;
 {$ENDIF}
+
+{$IFDEF SYN_CodeFolding2}
+procedure TCustomSynEdit.SetDrawFoldingMarkBeforeLine(const Value: Boolean);
+begin
+  if FDrawFoldingMarkBeforeLine <> Value then
+  begin
+    FDrawFoldingMarkBeforeLine := Value;
+    Invalidate;
+    InvalidateGutter;
+  end;
+end;
+
+procedure TCustomSynEdit.SetShowSkippedLineCountHint(const Value: Boolean);
+begin
+  if FShowSkippedLineCountHint <> Value then
+  begin
+    FShowSkippedLineCountHint := Value;
+    Invalidate;
+    InvalidateGutter;
+  end;
+end;
+
+type
+  TLineDDAParams = record
+    ACanvas: TCanvas;
+    AColorFont, AColorBack: TColor;
+    Counter: Integer;
+  end;
+  PLineDDAParams = ^TLineDDAParams;
+
+procedure DDACallBack(X, Y: Integer; P: PLineDDAParams); stdcall;
+begin
+  with P^ do
+  begin
+    Inc(Counter);
+    if Counter > 5 then
+      Counter := 0;
+    if Counter in [0..2] then
+      ACanvas.Pixels[X, Y] := AColorFont
+    else
+      ACanvas.Pixels[X, Y] := AColorBack;
+  end;
+end;
+
+procedure TCustomSynEdit.PaintFoldingMarkBeforeLine(
+  AClip: TRect; const aFirstRow, aLastRow, FirstCol, LastCol: Integer);
+
+  function CheckRange(FromRow, ToRow: Integer): Boolean;
+  begin
+    Result := ((FromRow >= aFirstRow) and (FromRow <= aLastRow));
+    Result := Result or (ToRow >= aFirstRow) and (ToRow <= aLastRow);
+    Result := Result or ((ToRow < aFirstRow) and (ToRow > aLastRow));
+  end;
+
+var
+  I, FoldFromRow, FoldToRow, x, y: Integer;
+  FoldRange: TSynFoldRange;
+  rcFold, rcTopFold: TRect;
+  DDAParams: TLineDDAParams;
+begin
+  for I := 0 to AllFoldRanges.Count - 1 do
+  begin
+    FoldRange := AllFoldRanges.Ranges[I];
+    FoldFromRow := LineToRow(FoldRange.FromLine);
+    FoldToRow := LineToRow(FoldRange.ToLine);
+    if not CheckRange(FoldFromRow, FoldToRow) then Continue;
+
+    rcTopFold := GetFoldShapeRect(FoldFromRow);
+    Canvas.Pen.Color := fCodeFolding.FolderBarLinesColor;
+    if rcTopFold.Left < FGutterWidth then
+      Canvas.Brush.Color := Gutter.Color
+    else
+      Canvas.Brush.Color := Color;
+    Canvas.FillRect(rcTopFold);
+    Canvas.Brush.Color := fCodeFolding.FolderBarLinesColor;
+    Canvas.FrameRect(rcTopFold);
+
+    // Paint minus sign
+    Canvas.Pen.Color := fCodeFolding.FolderBarLinesColor;
+    Canvas.MoveTo(rcTopFold.Left + 2, rcTopFold.Top + ((rcTopFold.Bottom - rcTopFold.Top) div 2));
+    Canvas.LineTo(rcTopFold.Right - 2, rcTopFold.Top + ((rcTopFold.Bottom - rcTopFold.Top) div 2));
+
+    // Paint vertical line of plus sign
+    if FoldRange.Collapsed then
+    begin
+      x := rcTopFold.Left + ((rcTopFold.Right - rcTopFold.Left) div 2);
+      Canvas.MoveTo(x, rcTopFold.Top + 2);
+      Canvas.LineTo(x, rcTopFold.Bottom - 2);
+    end
+    else
+    // Draw the bottom part of a line
+    begin
+      x := rcTopFold.Left + ((rcTopFold.Right - rcTopFold.Left) div 2);
+      Canvas.MoveTo(x, rcTopFold.Bottom);
+      Canvas.LineTo(x, (FoldFromRow - fTopLine + 1) * LineHeight);
+    end;
+
+    // Draw bottom full line
+    rcFold := GetFoldShapeRect(FoldToRow);
+    x := rcTopFold.Left + ((rcTopFold.Right - rcTopFold.Left) div 2);
+    if rcFold.Top > rcTopFold.Bottom then
+    begin
+      if rcTopFold.Left > FGutterWidth then
+      begin
+        DDAParams.ACanvas := Canvas;
+        DDAParams.AColorFont := fCodeFolding.FolderBarLinesColor;
+        DDAParams.AColorBack := Color;
+        DDAParams.Counter := 0;
+        LineDDA(x, rcTopFold.Bottom + 1, x, rcFold.Top, @DDACallBack, LPARAM(@DDAParams));
+        Canvas.MoveTo(x, rcFold.Top + 2);
+      end
+      else
+      begin
+        Canvas.MoveTo(x, rcTopFold.Bottom);
+        Canvas.LineTo(x, rcFold.Top);
+      end;
+      y := rcFold.Top + rcFold.Height div 2;
+      Canvas.LineTo(x, y);
+      x := rcTopFold.Right;
+      Canvas.LineTo(x, y);
+
+      // arrow
+      Dec(x, 2);
+      Canvas.MoveTo(x, y);
+      Canvas.LineTo(x, y - 1);
+      Canvas.LineTo(x, y + 2);
+      Dec(x);
+      Canvas.MoveTo(x, y);
+      Canvas.LineTo(x, y - 2);
+      Canvas.LineTo(x, y + 3);
+    end;
+  end;
+end;
+{$ENDIF}
+
 
 procedure TCustomSynEdit.ShowCaret;
 begin
@@ -9123,6 +9394,22 @@ begin
 {$IFDEF SYN_CodeFolding}
   ptRowCol := PixelsToRowColumn(ptCursor.X, ptCursor.Y);
   ptLineCol := DisplayToBufferPos(ptRowCol);
+
+  {$IFDEF SYN_CodeFolding2}
+  if DrawFoldingMarkBeforeLine then
+  begin
+    if UseCodeFolding and fAllFoldRanges.FoldStartAtLine(ptLineCol.Line) then
+    begin
+      Rect := GetFoldShapeRect(ptRowCol.Row);
+      if PtInRect(Rect, ptCursor) then
+      begin
+        SetCursor(Screen.Cursors[crHandPoint]);
+        Exit;
+      end;
+    end;
+  end;
+  {$ENDIF}
+
   if (ptCursor.X < fGutterWidth) then begin
     if UseCodeFolding and
       fAllFoldRanges.FoldStartAtLine(ptLineCol.Line) then

@@ -301,6 +301,9 @@ type
     // Override only if some finetuning of the FoldRanges is need.
     procedure AdjustFoldRanges(FoldRanges: TSynFoldRanges;
       LinesToScan: TStrings); virtual;
+    {$IFDEF SYN_CodeFolding2}
+    procedure CorrectFoldShapeRect(LineIndex: Integer; var ARect: TRect); virtual;
+    {$ENDIF}
   end;
 
   Const
@@ -368,6 +371,15 @@ begin
     function(const L, R: TLineFoldInfo): Integer
     begin
       Result := L.Line - R.Line;
+
+      // на одной строке могут закрываться несколько узлов!!!
+      {$IFDEF SYN_CodeFolding2}
+      if Result = 0 then
+        Result := L.FoldType - R.FoldType;
+      if Result = 0 then
+        Result := L.Indent - R.Indent;
+      {$ENDIF}
+
     end));
 end;
 
@@ -956,6 +968,14 @@ procedure TSynCustomCodeFoldingHighlighter.AdjustFoldRanges(
 begin
   // Do nothing
 end;
+
+{$IFDEF SYN_CodeFolding2}
+procedure TSynCustomCodeFoldingHighlighter.CorrectFoldShapeRect(
+  LineIndex: Integer; var ARect: TRect);
+begin
+  // Do nothing
+end;
+{$ENDIF}
 
 function TSynCustomCodeFoldingHighlighter.GetHighlighterAttriAtRowCol(
   const Lines: TStrings; const Line: Integer;
