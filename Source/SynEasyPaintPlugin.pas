@@ -55,7 +55,7 @@ type
 procedure TSynEasyPaintPlugin.AfterPaint(ACanvas: TCanvas; const AClip: TRect;
   FirstLine, LastLine: Integer);
 var
-  LH, X, Y, FoldIndex: Integer;
+  LH, X, Y: Integer;
   HeaderData: THeaderData;
   Marks: TGutterMarks;
   NeedPaintOnEditCanvas, IsHeader: Boolean;
