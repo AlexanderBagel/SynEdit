@@ -11,16 +11,16 @@ To get started check out the different examples. If you have questions, please s
 
 There is no documentation yet, help in this area is especially welcome!
 
-Historical Note
+SynEasy
 ---------------
-SynEdit had been started as an attempt to continue the no longer maintained
-sources of the mwEdit project. The last public version 0.92a of mwEdit can be
-found at the SynEdit website in the download section.
 
-The mwEdit project was started in 1998 by Martin Waldenburg, aim was to produce a syntax highlighting editor component for an Open Source IDE. In the 15 months that mwEdit was developed in public Martin was increasingly dissatisfied with the direction the development of mwEdit took, so he finally requested that his name and initials had to be removed from the project.
-Therefore this is now called SynEdit, and it is an Open Source project under the MPL (Mozilla Public License, but see the individual source files for the terms).
-There would however be no such project if Martin had not started to develop mwEdit, so we would like to thank Martin Waldenburg for his efforts, and of course all the other developers of the mwEdit project.
+SynEasy - расширение SynEdit обеспечивающее простой доступ к расцветке текста хранящегося в редакторе.
+Основные изменения связаны с выносом экспандеров из Gutter-a в область текста.
+Все изменения в SynEdit выполнены под директивой SYN_CodeFolding2 и легко локализуемы.
 
-Misc.
------
-Delphinus support added
+В набор добавлены два модуля:
+1. SynEasyHighlighter - непосредственно хайлайтер позволяющий управлять подсветкой.
+2. SynEasyPaintPlugin - плагин постобработки реализующий отрисовку иконок и результатов поиска.
+3. Так-же добавлен демонстрационный пример использования "Demos\SynEasyHighlighterDemo"
+
+![1](https://github.com/AlexanderBagel/SynEdit/blob/master/SynEasy.png?raw=true "Возможности расширения")

@@ -4,10 +4,11 @@ uses
   Vcl.Forms,
   Unit1 in 'Unit1.pas' {Form1},
   SynEasyHighlighter in '..\..\Source\SynEasyHighlighter.pas',
-  SynEdit in '..\..\Source\SynEdit.pas',
   SynEditCodeFolding in '..\..\Source\SynEditCodeFolding.pas',
   SynEditHighlighter in '..\..\Source\SynEditHighlighter.pas',
-  SynEditTypes in '..\..\Source\SynEditTypes.pas';
+  SynEditTypes in '..\..\Source\SynEditTypes.pas',
+  SynEasyPaintPlugin in '..\..\Source\SynEasyPaintPlugin.pas',
+  SynEdit in '..\..\Source\SynEdit.pas';
 
 {$R *.res}
 

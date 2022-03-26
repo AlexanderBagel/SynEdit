@@ -108,10 +108,11 @@
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="..\..\Source\SynEasyHighlighter.pas"/>
-        <DCCReference Include="..\..\Source\SynEdit.pas"/>
         <DCCReference Include="..\..\Source\SynEditCodeFolding.pas"/>
         <DCCReference Include="..\..\Source\SynEditHighlighter.pas"/>
         <DCCReference Include="..\..\Source\SynEditTypes.pas"/>
+        <DCCReference Include="..\..\Source\SynEasyPaintPlugin.pas"/>
+        <DCCReference Include="..\..\Source\SynEdit.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

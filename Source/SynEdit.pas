@@ -45,6 +45,23 @@ Known Issues:
 //todo: remove FShowSpecChar variable
 //todo: remove the several Undo block types?
 
+//
+// =============================================================================
+//
+// Изменения в фолдинге от Александр (Rouse_) Багель
+// (Все изменения под директивой SYN_CodeFolding2)
+//
+// Добавлены свойства:
+//   TextOffset - Смещение текста в строке относительно его позиции по умолчанию
+//   ShowSkippedLineCountHint - Отображение информации о количестве скрытых строк правее квадрата
+//   DrawFoldingMarkBeforeLine - Отрисовка экспандера не на гутере, а непосредственно перед текстом
+//
+// Добавлены методы:
+//   PaintFoldingMarkBeforeLine - отрисовка экспандера непосредственно перед линией
+//
+// =============================================================================
+//
+
 unit SynEdit;
 
 {$I SynEdit.inc}
@@ -938,6 +955,9 @@ type
     procedure UnCollapseFoldType(FoldType : Integer);
 {$ENDIF}
     {$IFDEF SYN_CodeFolding2}
+    /// <summary>
+    ///  Смещение текста в строке относительно его позиции по умолчанию
+    /// <summary>
     property TextOffset: Integer read FTextOffset;
     {$ENDIF}
   public
@@ -998,7 +1018,13 @@ type
     property AllFoldRanges: TSynFoldRanges read fAllFoldRanges;
 {$ENDIF}
 {$IFDEF SYN_CodeFolding2}
+    /// <summary>
+    ///  Отображение информации о количестве скрытых строк правее квадрата
+    /// <summary>
     property ShowSkippedLineCountHint: Boolean read FShowSkippedLineCountHint write SetShowSkippedLineCountHint;
+    /// <summary>
+    ///  Отрисовка экспандера не на гутере, а непосредственно перед текстом
+    /// <summary>
     property DrawFoldingMarkBeforeLine: Boolean read FDrawFoldingMarkBeforeLine write SetDrawFoldingMarkBeforeLine;
 {$ENDIF}
     property BookMarkOptions: TSynBookMarkOpt
@@ -2361,7 +2387,17 @@ begin
     if fScrollDeltaY <> 0 then
       P.Row := DisplayY;
     InternalCaretXY := DisplayToBufferPos(P);
+
+    {$IFDEF SYN_CodeFolding2}
+    if not (BlockEnd = CaretXY) then
+    begin
+      BlockEnd := CaretXY;
+      Invalidate;
+    end;
+    {$ELSE}
     BlockEnd := CaretXY;
+    {$ENDIF}
+
     if (sfPossibleGutterClick in FStateFlags) and (FBlockBegin.Line <> CaretXY.Line) then
       Include(FStateFlags, sfGutterDragging);
   end;
@@ -2489,6 +2525,9 @@ begin
           Uncollapse(Index)
         else
           Collapse(Index);
+        {$IFDEF SYN_CodeFolding2}
+        EnsureCursorPosVisible;
+        {$ENDIF}
         Exit;
       end;
     end;
@@ -5135,6 +5174,7 @@ begin
     FoldFromRow := LineToRow(FoldRange.FromLine);
     FoldToRow := LineToRow(FoldRange.ToLine);
     if not CheckRange(FoldFromRow, FoldToRow) then Continue;
+    if AllFoldRanges.FoldHidesLine(FoldRange.FromLine) then Continue;
 
     rcTopFold := GetFoldShapeRect(FoldFromRow);
     Canvas.Pen.Color := fCodeFolding.FolderBarLinesColor;
@@ -9774,6 +9814,10 @@ begin
   FStatusChanges := FStatusChanges + AChanges;
   if PaintLock = 0 then
     DoOnStatusChange(FStatusChanges);
+  {$IFDEF SYN_CodeFolding2}
+  if scSelection in FStatusChanges then
+    Invalidate;
+  {$ENDIF}
 end;
 
 procedure TCustomSynEdit.DoCaseChange(const Cmd: TSynEditorCommand);

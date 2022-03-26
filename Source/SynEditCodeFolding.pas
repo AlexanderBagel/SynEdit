@@ -1,4 +1,4 @@
-{ -------------------------------------------------------------------------------
+﻿{ -------------------------------------------------------------------------------
   The contents of this file are subject to the Mozilla Public License
   Version 1.1 (the "License"); you may not use this file except in compliance
   with the License. You may obtain a copy of the License at
@@ -8,8 +8,8 @@
   WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
   the specific language governing rights and limitations under the License.
 
-  The Original Code is SynEditWordWrap.pas by Fl�vio Etrusco, released 2003-12-11.
-  Unicode translation by Ma�l H�rz.
+  The Original Code is SynEditWordWrap.pas by Flбvio Etrusco, released 2003-12-11.
+  Unicode translation by Maлl Hцrz.
   All Rights Reserved.
 
   Contributors to the SynEdit and mwEdit projects are listed in the
@@ -104,6 +104,19 @@ unit SynEditCodeFolding;
    TList<TLineFoldInfo> only when it is necessary.
 
 }
+
+//
+// =============================================================================
+//
+// Изменения в фолдинге от Александр (Rouse_) Багель
+// (Все изменения под директивой SYN_CodeFolding2)
+//
+// Добавлен метод:
+//   CorrectFoldShapeRect - для коррекции позиции экспандера
+//
+// =============================================================================
+//
+
 interface
 
 {$I SynEdit.inc}
@@ -372,7 +385,7 @@ begin
     begin
       Result := L.Line - R.Line;
 
-      // �� ����� ������ ����� ����������� ��������� �����!!!
+      // на одной строке могут закрываться несколько узлов!!!
       {$IFDEF SYN_CodeFolding2}
       if Result = 0 then
         Result := L.FoldType - R.FoldType;
